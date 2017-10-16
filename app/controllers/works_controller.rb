@@ -11,11 +11,21 @@ class WorksController < ApplicationController
   end
 
   def index
-    @works_by_category = Work.to_category_hash
+    if session[:user_id] != nil
+      @works_by_category = Work.to_category_hash
+    else
+      flash[:result_text] = "You must be logged in to see the complete list of media."
+      redirect_to root_path
+    end
   end
 
   def new
-    @work = Work.new
+    if session[:user_id] != nil
+      @work = Work.new
+    else
+      flash[:result_text] = "You must be logged in to create new work."
+      redirect_to root_path
+    end
   end
 
   def create
@@ -34,10 +44,19 @@ class WorksController < ApplicationController
   end
 
   def show
-    @votes = @work.votes.order(created_at: :desc)
+    if session[:user_id] != nil
+      @votes = @work.votes.order(created_at: :desc)
+    else
+      flash[:result_text] = "You must be logged in to see a work's detail page."
+      redirect_to root_path
+    end
   end
 
   def edit
+    if session[:user_id] == nil
+      flash[:result_text] = "You must be logged in to edit a work."
+      redirect_to root_path
+    end
   end
 
   def update
@@ -55,10 +74,15 @@ class WorksController < ApplicationController
   end
 
   def destroy
-    @work.destroy
-    flash[:status] = :success
-    flash[:result_text] = "Successfully destroyed #{@media_category.singularize} #{@work.id}"
-    redirect_to root_path
+    if session[:user_id] != nil
+      @work.destroy
+      flash[:status] = :success
+      flash[:result_text] = "Successfully destroyed #{@media_category.singularize} #{@work.id}"
+      redirect_to root_path
+    else
+      flash[:result_text] = "You must be logged in to delete work."
+      redirect_to root_path
+    end
   end
 
   def upvote
