@@ -30,6 +30,7 @@ class WorksController < ApplicationController
 
   def create
     @work = Work.new(media_params)
+    @work.user_id = session[:user_id]
     @media_category = @work.category
     if @work.save
       flash[:status] = :success
@@ -53,8 +54,15 @@ class WorksController < ApplicationController
   end
 
   def edit
-    if session[:user_id] == nil
+    work = Work.find_by(id: params[:id])
+    if work == nil
+      flash[:result_text] = "This work does not exist."
+      redirect_to root_path
+    elsif session[:user_id] == nil
       flash[:result_text] = "You must be logged in to edit a work."
+      redirect_to root_path
+    elsif work.user == nil || work.user.id != session[:user_id]
+      flash[:result_text] = "You must be the creator of a work to edit it."
       redirect_to root_path
     end
   end
@@ -74,13 +82,19 @@ class WorksController < ApplicationController
   end
 
   def destroy
-    if session[:user_id] != nil
+    if !@work
+      flash[:result_text] = "This work does not exist."
+      redirect_to root_path
+    elsif session[:user_id] == nil
+      flash[:result_text] = "You must be logged in to delete a work."
+      redirect_to root_path
+    elsif @work.user == nil || @work.user.id != session[:user_id]
+      flash[:result_text] = "You must be the creator of a work to delete it."
+      redirect_to root_path
+    else
       @work.destroy
       flash[:status] = :success
       flash[:result_text] = "Successfully destroyed #{@media_category.singularize} #{@work.id}"
-      redirect_to root_path
-    else
-      flash[:result_text] = "You must be logged in to delete work."
       redirect_to root_path
     end
   end
@@ -114,7 +128,7 @@ class WorksController < ApplicationController
 
 private
   def media_params
-    params.require(:work).permit(:title, :category, :creator, :description, :publication_year)
+    params.require(:work).permit(:user_id, :title, :category, :creator, :description, :publication_year)
   end
 
   def category_from_work
